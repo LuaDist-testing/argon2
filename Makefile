@@ -3,7 +3,7 @@ LIB_NAME = argon2
 CC            ?= gcc
 LUA_VERSION   ?= 5.1
 LIBFLAG       ?= -shared
-LUA_CFLAGS    ?= -O2 -fPIC -Wall -Werror
+LUA_CFLAGS    ?= -O2 -fPIC -Wall -Werror -ansi -pedantic
 
 PREFIX        ?= /usr/local
 LUA_INCDIR    ?= $(PREFIX)/include
@@ -14,12 +14,12 @@ ARGON2_LIBDIR ?= $(PREFIX)/lib/
 BUILD_CFLAGS   = -I$(LUA_INCDIR) -I$(ARGON2_INCDIR)
 BUILD_LDFLAGS  = -L$(LUA_LIBDIR) -L$(ARGON2_LIBDIR) -llua -largon2
 
-.PHONY: all install test clean format doc $(LIB_NAME)
+.PHONY: all install test clean doc $(LIB_NAME)
 
 all: $(LIB_NAME).so
 
 $(LIB_NAME).so: $(LIB_NAME).o
-	$(CC) $(LIBFLAG) -o $@ $(BUILD_LDFLAGS) $(SO_LDFLAGS)
+	$(CC) $(LIBFLAG) -o $@ $< $(BUILD_LDFLAGS) $(SO_LDFLAGS)
 
 $(LIB_NAME).o: src/$(LIB_NAME).c
 	$(CC) $(LUA_CFLAGS) -c $< -o $@ $(BUILD_CFLAGS)
@@ -33,8 +33,5 @@ test:
 clean:
 	rm -f *.so *.o
 
-format:
-	clang-format -style="{BasedOnStyle: llvm, IndentWidth: 4}" -i src/$(LIB_NAME).c
-
 doc:
-	ldoc -c doc/config.ld src
+	ldoc -c docs/config.ld src
