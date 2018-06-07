@@ -5,13 +5,13 @@ the same time while you consult this binding's documentation.
 @module argon2
 @author Thibault Charbonnier
 @license MIT
-@release 1.2.0
+@release 2.0.0
 */
 
-#include <lua.h>
-#include <lauxlib.h>
-#include <lualib.h>
 #include <argon2.h>
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
 #include <string.h>
 
 /***
@@ -25,7 +25,8 @@ Default values can be overriden with `m_cost`, `t_cost`, `parallelism` and
     override: argon2.m_cost(4)
 @field parallelism Number of threads and compute lanes (`number`, default: `1`)
     override: argon2.parallelism(2)
-@field argon2d If `true`, will use the Argon2d hashing function (`boolean`, default: `false`)
+@field argon2d If `true`, will use the Argon2d hashing function (`boolean`,
+default: `false`)
     override: argon2.argon2d(true)
               argon2.argon2d("on")
 @table options
@@ -46,25 +47,10 @@ typedef struct {
 
 // CONFIGURATION
 
-static int largon2_destroy_config(lua_State *L) {
-    largon2_config *cfg;
-
-    cfg = lua_touserdata(L, 1);
-    cfg = NULL;
-
-    return 0;
-}
-
 static void largon2_create_config(lua_State *L) {
     largon2_config *cfg;
 
     cfg = lua_newuserdata(L, sizeof(*cfg));
-
-    lua_newtable(L);
-    lua_pushcfunction(L, largon2_destroy_config);
-    lua_setfield(L, -2, "__gc");
-    lua_setmetatable(L, -2);
-
     cfg->t_cost = DEFAULT_T_COST;
     cfg->m_cost = DEFAULT_M_COST;
     cfg->parallelism = DEFAULT_PARALLELISM;
@@ -151,6 +137,9 @@ static int largon2_cfg_argon2d(lua_State *L) {
             value = luaL_checkoption(L, 1, NULL, bool_options);
             lua_pushstring(L, bool_options[value]);
         }
+    } else {
+        value = 0;
+        lua_pushboolean(L, 0);
     }
 
     cfg->argon2_t = value ? Argon2_d : Argon2_i;
@@ -179,6 +168,7 @@ static int largon2_encrypt(lua_State *L) {
     largon2_config *cfg = largon2_arg_init(L, 3);
 
     char encoded[ENCODED_LEN];
+    int ret_code;
 
     const char *plain, *salt;
     size_t plainlen, saltlen;
@@ -215,18 +205,24 @@ static int largon2_encrypt(lua_State *L) {
 
         lua_getfield(L, -1, "argon2d");
         if (!lua_isnil(L, -1) && lua_isboolean(L, -1)) {
-            // reverse check than the option to allow overriding module setting
+            // reverse checking to allow overriding the module settings
             argon2_t = lua_toboolean(L, -1) ? Argon2_d : Argon2_i;
         }
 
         lua_pop(L, 1);
     }
 
-    int res =
-        argon2_hash(t_cost, m_cost, parallelism, plain, plainlen, salt, saltlen,
-                    NULL, HASH_LEN, encoded, ENCODED_LEN, argon2_t);
-    if (res != ARGON2_OK) {
-        const char *err_msg = error_message(res);
+    if (argon2_t == Argon2_i)
+        ret_code =
+            argon2i_hash_encoded(t_cost, m_cost, parallelism, plain, plainlen,
+                                 salt, saltlen, HASH_LEN, encoded, ENCODED_LEN);
+    else
+        ret_code =
+            argon2d_hash_encoded(t_cost, m_cost, parallelism, plain, plainlen,
+                                 salt, saltlen, HASH_LEN, encoded, ENCODED_LEN);
+
+    if (ret_code != ARGON2_OK) {
+        const char *err_msg = argon2_error_message(ret_code);
         lua_pushnil(L);
         lua_pushstring(L, err_msg);
         return 2;
@@ -281,7 +277,7 @@ static int largon2_verify(lua_State *L) {
 /* Compatibility for Lua 5.1.
  *
  * luaL_setfuncs() is used to create a module table where the functions have
- * json_config_t as their first upvalue. Code borrowed from Lua 5.2 source. */
+ * largon2_config as their first upvalue. Code borrowed from Lua 5.2 source. */
 static void luaL_setfuncs(lua_State *l, const luaL_Reg *reg, int nup) {
     int i;
 
@@ -310,7 +306,7 @@ int luaopen_argon2(lua_State *L) {
     largon2_create_config(L);
     luaL_setfuncs(L, largon2, 1);
 
-    lua_pushstring(L, "1.2.0");
+    lua_pushstring(L, "2.0.0");
     lua_setfield(L, -2, "_VERSION");
 
     lua_pushstring(L, "Thibault Charbonnier");
