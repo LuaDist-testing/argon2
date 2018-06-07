@@ -1,5 +1,4 @@
 LIB_NAME = argon2
-BRIDGE_NAME = l$(LIB_NAME)
 
 CC            ?= gcc
 LUA_VERSION   ?= 5.1
@@ -15,25 +14,27 @@ ARGON2_LIBDIR ?= -L$(PREFIX)/lib/ -largon2
 BUILD_CFLAGS   = $(LUA_INCDIR) $(ARGON2_INCDIR)
 BUILD_LDFLAGS  = $(LUA_LIBDIR) $(ARGON2_LIBDIR)
 
-.PHONY: all install test clean format $(LIB_NAME)
+.PHONY: all install test clean format doc $(LIB_NAME)
 
-all: $(BRIDGE_NAME).so
+all: $(LIB_NAME).so
 
-$(BRIDGE_NAME).so: $(BRIDGE_NAME).o
+$(LIB_NAME).so: $(LIB_NAME).o
 	$(CC) $(LIBFLAG) -o $@ $< $(BUILD_LDFLAGS) $(SO_LDFLAGS)
 
-$(BRIDGE_NAME).o: $(BRIDGE_NAME).c
+$(LIB_NAME).o: src/$(LIB_NAME).c
 	$(CC) -c $(LUA_CFLAGS) $< -o $@ $(BUILD_CFLAGS)
 
 install:
-	cp $(BRIDGE_NAME).so $(INST_LIBDIR)
-	cp $(LIB_NAME).lua $(INST_LUADIR)
+	cp $(LIB_NAME).so $(INST_LIBDIR)
 
 test:
-	@busted test.lua
+	@busted -v spec
 
 clean:
 	rm -f *.so *.o
 
 format:
-	clang-format -style="{BasedOnStyle: llvm, IndentWidth: 4}" -i $(BRIDGE_NAME).c
+	clang-format -style="{BasedOnStyle: llvm, IndentWidth: 4}" -i src/$(LIB_NAME).c
+
+doc:
+	ldoc -c doc/config.ld src

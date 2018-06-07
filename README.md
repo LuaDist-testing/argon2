@@ -1,20 +1,20 @@
-# lua-argon2 [![Build Status][badge-travis-image]][badge-travis-url] [![Module Version][badge-version-image]][luarocks-argon2]
+# lua-argon2 [![Module Version][badge-version-image]][luarocks-argon2] [![Build Status][badge-travis-image]][badge-travis-url] [![Coverage Status][badge-coveralls-image]][badge-coveralls-url]
 
 Lua binding for [Argon2]. Compatible with Lua 5.1, 5.2, 5.3, LuaJIT 2.0 and 2.1.
 
 ### Prerequisites
 
-[Argon2] must be compiled and available somewhere in your system.
+The [Argon2] shared library must be compiled and available in your system.
 
 ### Install
 
 This binding can be installed with [Luarocks](https://luarocks.org):
 
 ```
-$ luarocks install argon2 ARGON2_LIBDIR="..." ARGON2_INCDIR="..."
+$ luarocks install argon2 ARGON2_INCDIR="..." ARGON2_LIBDIR="..."
 ```
 
-`ARGON2_LIBDIR` must contain the `argon2.h` header file, and `ARGON2_INCDIR` must contain the compiled shared library for your platform.
+`ARGON2_INCDIR` must contain the `argon2.h` header file, and `ARGON2_LIBDIR` must contain the compiled shared library for your platform.
 
 Or by using the provided Makefile (use the provided variables to point it to your Lua and argon2 installations):
 
@@ -22,7 +22,7 @@ Or by using the provided Makefile (use the provided variables to point it to you
 $ make
 ```
 
-Using the Makefile will compile `largon2.so` which must be placed somwhere in your `LUA_CPATH`. You will also have to copy `argon2.lua` somewhere in your `LUA_PATH`.
+Using the Makefile will compile `argon2.so` which must be placed somwhere in your `LUA_CPATH`.
 
 ### Usage
 
@@ -37,14 +37,14 @@ assert(err == nil)
 assert(hash == "$argon2i$m=12,t=2,p=1$c29tZXNhbHQ$ltrjNRFqTXmsHj++TFGZxg+zSg8hSrrSJiViCRns1HM")
 
 -- Argon2d
-hash, err = argon2.encrypt("password", "somesalt", {argon2d = true})
+local hash, err = argon2.encrypt("password", "somesalt", {argon2d = true})
 assert(err == nil)
 assert(hash == "$argon2d$m=12,t=2,p=1$c29tZXNhbHQ$mfklun4fYCbv2Hw0UnZZ56xAqWbjD+XRMSN9h6SfLe4")
 
 -- Options
 local hash, err = argon2.encrypt("password", "somesalt", {
-  timeCost = 4,
-  memoryCost = 24,
+  t_cost = 4,
+  m_cost = 24,
   parallelism = 2
 })
 assert(err == nil)
@@ -63,10 +63,14 @@ local ok, err = argon2.verify(hash, "password")
 assert(err == nil)
 assert(ok == true)
 
-ok, err = argon2.verify(hash, "passworld")
+local ok, err = argon2.verify(hash, "passworld")
 assert(err == "The password did not match.")
 assert(ok == false)
 ```
+
+### Documentation
+
+The full documentation is available [online](http://thibaultcha.github.io/lua-argon2/).
 
 ### License
 
@@ -76,4 +80,6 @@ Work licensed under the MIT License. Please check [P-H-C/phc-winner-argon2][Argo
 [luarocks-argon2]: http://luarocks.org/modules/thibaultcha/argon2
 [badge-travis-url]: https://travis-ci.org/thibaultCha/lua-argon2
 [badge-travis-image]: https://travis-ci.org/thibaultCha/lua-argon2.svg?branch=master
-[badge-version-image]: https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat
+[badge-version-image]: https://img.shields.io/badge/version-1.1.1-blue.svg?style=flat
+[badge-coveralls-url]: https://coveralls.io/github/thibaultCha/lua-argon2?branch=master
+[badge-coveralls-image]: https://coveralls.io/repos/github/thibaultCha/lua-argon2/badge.svg?branch=master
