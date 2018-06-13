@@ -31,7 +31,7 @@ Compatibility:
   to [`20161029`](https://github.com/P-H-C/phc-winner-argon2/releases/tag/20161029).
 - Version `3.x` of this module is compatible with Argon2
   [`20161029`](https://github.com/P-H-C/phc-winner-argon2/releases/tag/20161029)
-  and later.
+  and above.
 
 See the [CI builds][badge-coveralls-url] for the status of the currently
 supported versions.
@@ -150,6 +150,6 @@ implementation.
 
 [badge-travis-url]: https://travis-ci.org/thibaultcha/lua-argon2
 [badge-travis-image]: https://travis-ci.org/thibaultcha/lua-argon2.svg?branch=master
-[badge-version-image]: https://img.shields.io/badge/version-3.0.0-blue.svg?style=flat
+[badge-version-image]: https://img.shields.io/badge/version-3.0.1-blue.svg?style=flat
 [badge-coveralls-url]: https://coveralls.io/github/thibaultcha/lua-argon2?branch=master
 [badge-coveralls-image]: https://coveralls.io/repos/github/thibaultcha/lua-argon2/badge.svg?branch=master

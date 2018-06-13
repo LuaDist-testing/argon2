@@ -16,15 +16,25 @@ original implementaiton.
 @module argon2
 @author Thibault Charbonnier
 @license MIT
-@release 3.0.0
+@release 3.0.1
 */
 
 
 #include <string.h>
+#include <stdio.h>
 #include <argon2.h>
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
+
+
+#ifndef LUA_51
+#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 502
+#define LUA_51 1
+#else
+#define LUA_51 0
+#endif
+#endif
 
 
 /***
@@ -71,10 +81,10 @@ Can be set to a new default in lua-argon2 (C binding only) by calling:
     argon2.variant(argon2.variants.argon2_id)
 @table options
 */
-#define DEFAULT_T_COST 3
-#define DEFAULT_M_COST 4096
-#define DEFAULT_PARALLELISM 1
-#define DEFAULT_HASH_LEN 32
+#define LUA_ARGON2_DEFAULT_T_COST 3
+#define LUA_ARGON2_DEFAULT_M_COST 4096
+#define LUA_ARGON2_DEFAULT_PARALLELISM 1
+#define LUA_ARGON2_DEFAULT_HASH_LEN 32
 
 
 typedef struct largon2_config_s largon2_config_t;
@@ -96,10 +106,10 @@ largon2_create_config(lua_State *L)
     largon2_config_t *cfg;
 
     cfg              = lua_newuserdata(L, sizeof(*cfg));
-    cfg->t_cost      = DEFAULT_T_COST;
-    cfg->m_cost      = DEFAULT_M_COST;
-    cfg->parallelism = DEFAULT_PARALLELISM;
-    cfg->hash_len    = DEFAULT_HASH_LEN;
+    cfg->t_cost      = LUA_ARGON2_DEFAULT_T_COST;
+    cfg->m_cost      = LUA_ARGON2_DEFAULT_M_COST;
+    cfg->parallelism = LUA_ARGON2_DEFAULT_PARALLELISM;
+    cfg->hash_len    = LUA_ARGON2_DEFAULT_HASH_LEN;
     cfg->variant     = Argon2_i;
 }
 
@@ -144,9 +154,8 @@ largon2_integer_opt(lua_State *L, uint32_t optidx, uint32_t argidx,
             *property = value;
 
         } else {
-            snprintf(errmsg, sizeof(errmsg),
-                     "expected %s to be a number, got %s",
-                     key, luaL_typename(L, optidx));
+            sprintf(errmsg, "expected %s to be a number, got %s",
+                    key, luaL_typename(L, optidx));
             luaL_argerror(L, argidx, errmsg);
         }
     }
@@ -295,9 +304,8 @@ largon2_hash_encoded(lua_State *L)
         if (!lua_isnil(L, -1)) {
             if (!lua_islightuserdata(L, -1)) {
                 char errmsg[64];
-                snprintf(errmsg, sizeof(errmsg),
-                         "expected variant to be a number, got %s",
-                         luaL_typename(L, -1));
+                sprintf(errmsg, "expected variant to be a number, got %s",
+                        luaL_typename(L, -1));
                 luaL_argerror(L, 3, errmsg);
             }
 
@@ -310,8 +318,12 @@ largon2_hash_encoded(lua_State *L)
     encoded_len = argon2_encodedlen(t_cost, m_cost, parallelism, saltlen,
                                     hash_len, variant);
 
+#if LUA_51
     luaL_buffinit(L, &buf);
     encoded = luaL_prepbuffer(&buf);
+#else
+    encoded = luaL_buffinitsize(L, &buf, encoded_len);
+#endif
 
     if (variant == Argon2_d) {
         ret_code =
@@ -329,8 +341,12 @@ largon2_hash_encoded(lua_State *L)
                                salt, saltlen, hash_len, encoded, encoded_len);
     }
 
+#if LUA_51
     luaL_addsize(&buf, encoded_len);
     luaL_pushresult(&buf);
+#else
+    luaL_pushresultsize(&buf, encoded_len);
+#endif
 
     if (ret_code != ARGON2_OK) {
         err_msg = (char *) argon2_error_message(ret_code);
@@ -436,13 +452,13 @@ largon2_push_argon2_variants_table(lua_State *L)
 }
 
 
-#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 502
+#if LUA_51
 /* Compatibility for Lua 5.1.
  *
  * luaL_setfuncs() is used to create a module table where the functions have
  * largon2_config_t as their first upvalue. Code borrowed from Lua 5.2 source. */
 static void
-luaL_setfuncs(lua_State *l, const luaL_Reg *reg, int nup)
+compat_luaL_setfuncs(lua_State *l, const luaL_Reg *reg, int nup)
 {
     int i;
 
@@ -455,6 +471,8 @@ luaL_setfuncs(lua_State *l, const luaL_Reg *reg, int nup)
     }
     lua_pop(l, nup); /* remove upvalues */
 }
+#else
+#define compat_luaL_setfuncs(L, l, nup) luaL_setfuncs(L, l, nup)
 #endif
 
 
@@ -474,14 +492,14 @@ luaopen_argon2(lua_State *L)
     lua_newtable(L);
 
     largon2_create_config(L);
-    luaL_setfuncs(L, largon2, 1);
+    compat_luaL_setfuncs(L, largon2, 1);
 
     /* push argon2.variants table */
 
     largon2_push_argon2_variants_table(L);
     lua_setfield(L, -2, "variants");
 
-    lua_pushstring(L, "3.0.0");
+    lua_pushstring(L, "3.0.1");
     lua_setfield(L, -2, "_VERSION");
 
     lua_pushstring(L, "Thibault Charbonnier");
